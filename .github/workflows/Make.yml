@@ -1,17 +1,51 @@
-steps:  
-  - name: Download Clang  
-   run: |  
-    wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android12-release/clang-r443413c.tar.gz -O aosp-clang.tar.gz  
+name: Build Kernel  
+on:  
+  workflow_dispatch:  
   
-  - name: Build Kernel  
-   uses: dabao1955/kernel_build_action@main  
-   with:  
-    kernel-url: https://github.com/Svirusx/Nethunter-Kernel-S20_FE_5G.git  
-    kernel-branch: nethunter-13.0  
-    config: wirus_defconfig  
-    arch: arm64  
-    aosp-gcc: true  
-    aosp-clang: true  
-    clang-path: /opt/clang  
-    android-version: 12  
-    disable-lto: true
+jobs:  
+  Build-Kernel:  
+   runs-on: ubuntu-latest  
+   permissions:  
+    contents: read  
+  
+   steps:  
+   - name: Checkout Kernel Source  
+    uses: actions/checkout@v3  
+  
+   - name: Install Dependencies  
+    run: |  
+      sudo apt-get update  
+      sudo apt-get install -y wget  
+  
+   - name: Download and Setup Clang  
+    run: |  
+      wget https://dl.google.com/android/repository/clang-r450784d-linux.tar.gz  
+      mkdir -p /opt/clang  
+      tar -xzf clang-r450784d-linux.tar.gz -C /opt/clang  
+      echo "/opt/clang/bin" >> $GITHUB_PATH  
+  
+   - name: Build Kernel  
+    uses: dabao1955/kernel_build_action@main  
+    with:  
+       kernel-url: https://github.com/Svirusx/Nethunter-Kernel-S20_FE_5G.git  
+       kernel-branch: nethunter-13.0  
+       config: wirus_defconfig  
+       arch: arm64  
+       aosp-gcc: true  
+       aosp-clang: true  
+       ksu: false  
+       ksu-version: main  
+       android-version: 12  
+       aosp-clang-version: r450784d  
+       disable-lto: true  
+       anykernel3: false  
+  
+   - name: Upload Kernel Artifacts  
+    uses: actions/upload-artifact@v3  
+    with:  
+      name: kernel-build-output  
+      path: path/to/your/kernel/output  
+  
+   - name: Notify on Failure  
+    if: failure()  
+    run: echo "Kernel build failed!"
